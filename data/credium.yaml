@@ -1,0 +1,20 @@
+path: E:/yolov9/credium_dataset 
+train: train_scaled.txt 
+# train: train.txt  
+val: val_scaled.txt  
+# val: val.txt  
+test: test_scaled.txt 
+# test: test.txt  
+
+# Classes
+names:
+  0: Solar
+  1: PV
+  2: Roof_Terrace
+  3: Dormer
+  4: Roof_Windows
+  5: Chimneys
+  6: Wintergarden
+  7: Unknown_Class_
+  
+
