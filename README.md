@@ -52,6 +52,6 @@ python ./segment/val.py --data data/credium.yaml --img 512 --batch 8 --conf 0.00
 ### Predict
 
 ```shell
-python ./segment/predict.py --data data/credium.yaml --img 512 --conf 0.001 --iou 0.7 --device 0 --weights './"E:/yolov9/runs/train-seg/gelan-c-seg-512/weights/best.pt"' --source "E:\yolov9\credium_dataset\images\test\thueringen_DETHL54P0000w17m_0_4c5915a7-573a-4215-b65c-cea3764d7837.image_dop_10_400000.png" --hide-labels
+python ./segment/predict.py --data data/credium.yaml --img 512 --conf 0.001 --iou 0.7 --device 0 --weights './"E:/yolov9/runs/train-seg/gelan-c-seg-512/weights/best.pt"' --source "E:\yolov9\credium_dataset\images\test\thueringen_DETHL54P0000w17m_0_4c5915a7-573a-4215-b65c-cea3764d7837.image_dop_10_400000.png" --hide-labels --max-detect 15
 ```
 
