@@ -18,7 +18,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh,xyn2xy)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
-
+import numpy as np
 from segment_anything import sam_model_registry, SamPredictor
 
 @smart_inference_mode()
@@ -72,7 +72,7 @@ def run(
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     ## Loads the SAM model for mask generation based on prompts
-    model_type = "vit_l"
+    model_type = "vit_h"
     sam = sam_model_registry[model_type](checkpoint=opt.sam_checkpoint)
     sam.to(device=device)
     sam_predictor = SamPredictor(sam)
@@ -105,7 +105,7 @@ def run(
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
             pred = model(im, augment=augment, visualize=visualize)
             pred = pred[0][1]
-            sam_predictor.set_image(im) # sam predictor processes the image to produce image embeddings
+            sam_predictor.set_image(im[0].permute(1,2,0).cpu().numpy()) # sam predictor processes the image to produce image embeddings
         # NMS
         with dt[2]:
             pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
@@ -137,31 +137,28 @@ def run(
                 for c in det[:, 5].unique():
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                # multiple box prompts fro sam to produce masks
-                masks, _, _ = sam_predictor.predict_torch(
-                                point_coords=None,
-                                point_labels=None,
-                                boxes=det[:, :4],       
-                                multimask_output=False)
-                # #xyn2xy(det[:, :4],im0.shape[1],im0.shape[0]),
-                masks = torch.reshape(masks,(masks.shape[0],masks.shape[2],masks.shape[3]))
-               
+
                 # Write results
+                masks = []
                 for *xyxy, conf, cls in reversed(det):
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
+                    mask, _, _ = sam_predictor.predict(
+                                point_coords=None,
+                                point_labels=None,
+                                box=torch.tensor(xyxy).cpu().numpy(),       
+                                multimask_output=False)
+                    masks.append(mask)
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-
-                annotator.masks(masks,[colors(int(i[5]),True) for i in det])
+                annotator.masks(torch.from_numpy(np.vstack(masks)).to(device),im_gpu=im[0],colors = [colors(x, True) for x in range(len(det[:]))])
             # Save results (image with detections)
             if save_img:
                 if dataset.mode == 'image':
