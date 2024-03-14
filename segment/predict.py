@@ -20,7 +20,8 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.segment.general import masks2segments, process_mask
 from utils.torch_utils import select_device, smart_inference_mode
-
+import numpy as np
+from segment_anything import sam_model_registry, SamPredictor
 
 @smart_inference_mode()
 def run(
@@ -52,6 +53,7 @@ def run(
     dnn=False,  # use OpenCV DNN for ONNX inference
     vid_stride=1,  # video frame-rate stride
     retina_masks=False,
+    sam_checkpoint=ROOT / 'sam_vit_h_4b8939.pth'
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -95,11 +97,16 @@ def run(
             if len(im.shape) == 3:
                 im = im[None]  # expand for batch dim
 
+         ## Loads the SAM model for mask generation based on prompts
+        model_type = "vit_h"
+        sam = sam_model_registry[model_type](checkpoint=opt.sam_checkpoint)
+        sam.to(device=device)
+        sam_predictor = SamPredictor(sam)
         # Inference
         with dt[1]:
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
             pred, proto = model(im, augment=augment, visualize=visualize)[:2]
-
+            sam_predictor.set_image(im[0].permute(1,2,0).cpu().numpy())
         # NMS
         with dt[2]:
             pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det, nm=32)
@@ -118,17 +125,21 @@ def run(
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg
+            sam_image = f"{p.name.rsplit('.',1)[0]}_sam.{p.name.rsplit('.',1)[1]}"
+            save_path_sam= str(save_dir / sam_image)
             txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[2:]  # print string
             imc = im0.copy() if save_crop else im0  # for save_crop
+            sam_annotator = Annotator(im0.copy(), line_width=line_thickness, example=str(names))
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
             if len(det):
-                masks = process_mask(proto[-1][i], det[:, 6:], det[:, :4], im.shape[2:], upsample=True)  # HWC
+                proto = proto[-1]
+                masks_yo = process_mask(proto[i], det[:, 6:], det[:, :4], im.shape[2:], upsample=True)  # HWC
                 det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()  # rescale boxes to im0 size
 
                 # Segments
                 if save_txt:
-                    segments = reversed(masks2segments(masks))
+                    segments = reversed(masks2segments(masks_yo))
                     segments = [scale_segments(im.shape[2:], x, im0.shape, normalize=True) for x in segments]
 
                 # Print results
@@ -136,12 +147,12 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                # Mask plotting
-                annotator.masks(masks,
-                                colors=[colors(x, True) for x in det[:, 5]],
+                annotator.masks(masks_yo,
+                                colors=[colors(x, True) for x in range(len(det[:]))],
                                 im_gpu=None if retina_masks else im[i])
 
                 # Write results
+                sam_masks = []
                 for j, (*xyxy, conf, cls) in enumerate(reversed(det[:, :6])):
                     if save_txt:  # Write to file
                         segj = segments[j].reshape(-1)  # (n,2) to (n*2)
@@ -149,16 +160,27 @@ def run(
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
+                    sam_mask, _, _ = sam_predictor.predict(
+                                point_coords=None,
+                                point_labels=None,
+                                box=torch.tensor(xyxy).cpu().numpy(),       
+                                multimask_output=False)
+                    sam_masks.append(sam_mask)
+
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+                        sam_annotator.box_label(xyxy, label, color=colors(c, True))
                         # annotator.draw.polygon(segments[j], outline=colors(c, True), width=3)
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                sam_annotator.masks(torch.from_numpy(np.vstack(sam_masks)).to(device),colors = [colors(x, True) for x in range(len(det[:]))])
 
             # Stream results
             im0 = annotator.result()
+            im_sam = sam_annotator.result()
+            
             if view_img:
                 if platform.system() == 'Linux' and p not in windows:
                     windows.append(p)
@@ -172,6 +194,7 @@ def run(
             if save_img:
                 if dataset.mode == 'image':
                     cv2.imwrite(save_path, im0)
+                    cv2.imwrite(save_path_sam,im_sam)
                 else:  # 'video' or 'stream'
                     if vid_path[i] != save_path:  # new video
                         vid_path[i] = save_path
@@ -223,13 +246,14 @@ def parse_opt():
     parser.add_argument('--project', default=ROOT / 'runs/predict-seg', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
+    parser.add_argument('--line-thickness', default=2, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
     parser.add_argument('--retina-masks', action='store_true', help='whether to plot masks in native resolution')
+    parser.add_argument('--sam_checkpoint',type=str,default=ROOT / 'sam_vit_h_4b8939.pth',help= 'model path for sam segmentation')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(vars(opt))
