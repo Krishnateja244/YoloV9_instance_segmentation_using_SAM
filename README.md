@@ -1,4 +1,4 @@
-# YOLOv9
+# Comparision of YOLOV9 instance segmentation and SAM based segmentation
 
 [YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information](https://arxiv.org/abs/2402.13616)
 
