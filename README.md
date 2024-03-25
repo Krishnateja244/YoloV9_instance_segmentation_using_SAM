@@ -2,7 +2,7 @@
 
 [YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information](https://arxiv.org/abs/2402.13616)
 
-#### YoloV9 Object detection + SAM Instance segmentation
+## YoloV9 Object detection + SAM Instance segmentation
 
 [`yolov9-c.pt`](https://github.com/WongKinYiu/yolov9/releases/download/v0.1/yolov9-c.pt) - For training the object detection task by using transfer learning . 
 
@@ -15,7 +15,9 @@ Segment Anything Model (SAM) is used to segment the image based on boundary boxe
 python detect_dual.py --source './data/images/bike.jpg' --img 640 --device 0 --weights './yolov9-c.pt' --name yolov9_c_640_detect 
 ```
 
-#### Instance Segmentation using GELAN (YoLoV9)
+![My Image](./runs/predict-seg/exp59/sam_predictions%20on%20bounding_box.png)
+
+## Instance Segmentation using GELAN (YoLoV9)
 
 ### Training 
 
@@ -54,4 +56,5 @@ python ./segment/val.py --data data/dataset.yaml --img 512 --batch 8 --conf 0.00
 ```shell
 python ./segment/predict.py --data data/dataset.yaml --img 512 --conf 0.001 --iou 0.7 --device 0 --weights './"E:/yolov9/runs/train-seg/gelan-c-seg-512/weights/best.pt"' --source "E:\yolov9\credium_dataset\images\test\thueringen_DETHL54P0000w17m_0_4c5915a7-573a-4215-b65c-cea3764d7837.image_dop_10_400000.png" --hide-labels --max-detect 15
 ```
+![My Image](./runs/predict-seg/exp59/thueringen_DETHL54P0000wLkr_0_e9ae02d5-2a7b-4305-8d0a-993e5479f5d3.image_dop_10_400000.png)
 
