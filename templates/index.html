@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prediction</title>
+</head>
+<body>
+    <h1>Image Prediction</h1>
+
+    <form action="/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload</button>
+    </form>
+
+    {% if image_path %}
+    <img id="my-image" src="{{ url_for('predict_img', filename=image_path) }}" style="height:1024px; width:1024px; display: none;"/>
+
+    <script>
+    document.getElementById("my-image").onload = function() {
+        this.style.display = "block";
+    };
+    </script>
+    {% endif %}
+</body>
+</html>
