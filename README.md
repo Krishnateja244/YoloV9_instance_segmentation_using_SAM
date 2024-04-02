@@ -58,3 +58,6 @@ python ./segment/predict.py --data data/dataset.yaml --img 512 --conf 0.001 --io
 ```
 ![My Image](./runs/predict-seg/exp59/thueringen_DETHL54P0000wLkr_0_e9ae02d5-2a7b-4305-8d0a-993e5479f5d3.image_dop_10_400000.png)
 
+
+## Note
+These models are only trined for 20 epochs because of lack of computational power hence the accuracy of results.
