@@ -3,24 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Prediction</title>
+    <title>Yolov9 Prediction</title>
 </head>
 <body>
-    <h1>Image Prediction</h1>
+    <h1>Instance Segmentation</h1>
 
-    <form action="/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <button type="submit">Upload</button>
-    </form>
-
-    {% if image_path %}
-    <img id="my-image" src="{{ url_for('predict_img', filename=image_path) }}" style="height:1024px; width:1024px; display: none;"/>
-
-    <script>
-    document.getElementById("my-image").onload = function() {
-        this.style.display = "block";
-    };
-    </script>
-    {% endif %}
+    <div class="container">
+        <div class="box">
+            <h2>Upload an Image</h2>
+            <form action="{{ url_for('predict_img') }}" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" id="imageUpload">
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+        <div class="box">
+            {% if image_path %}
+            <h2>Yolov9 Prediction</h2>
+            <img id="my-image" src="{{image_path}}" alt="image_path"/>
+            {% endif %}
+            {% if image_path_2 %}
+            <h2>SAM Prediction</h2>
+            <img id="my-image" src="{{image_path_2}}" alt="image_path"/>
+            {% endif %}
+        </div>
+    </div>
+    
 </body>
 </html>
