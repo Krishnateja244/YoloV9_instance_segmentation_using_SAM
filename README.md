@@ -2,6 +2,18 @@
 
 [YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information](https://arxiv.org/abs/2402.13616)
 
+## Web application 
+
+Pull Docker image 
+``` shell
+docker pull krishnatejan/yolov9_instance_segmentation:latest
+```
+
+Run container 
+``` shell
+docker run -p 8080:5000 --name instance --gpus all krishnatejan/yolov9_instance_segmentation 
+```
+
 ## YoloV9 Object detection + SAM Instance segmentation
 
 [`yolov9-c.pt`](https://github.com/WongKinYiu/yolov9/releases/download/v0.1/yolov9-c.pt) - For training the object detection task by using transfer learning . 
