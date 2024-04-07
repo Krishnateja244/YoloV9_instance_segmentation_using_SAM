@@ -1,0 +1,5 @@
+./dataset/images
+./runs/train-seg/gelan-c-seg-aug/
+./runs/train-seg/gelan-c-seg-512/
+./runs/detect/
+./runs/val-seg/
