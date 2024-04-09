@@ -1,6 +1,6 @@
 # Comparision of YOLOV9 instance segmentation and SAM based segmentation on remote sensing images
 
-[![Docker](https://github.com/Krishnateja244/YoloV9_instance_segmentation_using_SAM/actions/workflows/badge.svg)](https://github.com/Krishnateja244/YoloV9_instance_segmentation_using_SAM/actions)
+[![Docker](https://github.com/Krishnateja244/YoloV9_instance_segmentation_using_SAM/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Krishnateja244/YoloV9_instance_segmentation_using_SAM/actions)
 
 [YOLOv9: Learning What You Want to Learn Using Programmable Gradient Information](https://arxiv.org/abs/2402.13616)
 
