@@ -42,6 +42,6 @@ def predict_img():
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Flask app exposing yolov9 models")
-    parser.add_argument("--port", default=5000, type=int, help="port number")
+    parser.add_argument("--port", default=8080, type=int, help="port number")
     args = parser.parse_args()
     app.run(host="0.0.0.0", port=args.port) 
